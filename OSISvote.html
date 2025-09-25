@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pemilihan Ketua & Wakil OSIS</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    background: linear-gradient(to bottom right, #f0f4ff, #dfe9f3);
+    color: #333;
+}
+
+/* === POPUP STYLE === */
+.popup-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+.popup {
+    background: #fff;
+    padding: 20px 25px;
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    max-width: 320px;
+    text-align: center;
+    animation: fadeIn 0.3s ease-in-out;
+}
+.popup h3 {
+    margin: 0 0 10px;
+    color: #004aad;
+    font-size: 1.1em;
+}
+.popup p {
+    font-size: 0.95em;
+    margin: 0 0 15px;
+}
+.popup button {
+    margin: 5px;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9em;
+    transition: 0.2s;
+}
+.popup button.primary { background: #007BFF; color: #fff; }
+.popup button.danger { background: #dc3545; color: #fff; }
+.popup button:hover { transform: scale(1.05); opacity: 0.9; }
+
+/* === HEADER, KANDIDAT, HASIL (tetap sama) === */
+header {
+    background: linear-gradient(135deg, #336699, #6699cc);
+    color: white;
+    padding: 20px 15px;
+    text-align: center;
+    border-bottom-left-radius: 25px;
+    border-bottom-right-radius: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.header-flex { display: flex; align-items: center; justify-content: space-between; max-width: 900px; margin: 0 auto; }
+.header-flex img { width: 70px; height: 70px; object-fit: contain; }
+.header-title { flex: 1; text-align: center; }
+.header-title h1 { margin: 0; font-size: 1.5em; font-weight: bold; }
+.header-title h2 { margin: 5px 0 0; font-size: 1.1em; font-weight: normal; }
+
+.candidates {
+    display: flex; justify-content: center; gap: 25px; margin: 40px 0; flex-wrap: wrap;
+}
+.candidate {
+    cursor: pointer; border: 2px solid #ddd; border-radius: 18px;
+    background: white; box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+    text-align: center; width: 220px; overflow: hidden;
+}
+.candidate:hover { transform: translateY(-8px); border-color: #007BFF; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+.candidate img { width: 100%; height: 180px; object-fit: cover; }
+.candidate-name { background: #f4f6f9; padding: 12px; font-weight: bold; color: #004aad; font-size: 1.05em; }
+
+.controls { text-align: center; margin: 20px 0 40px; }
+button.primary { background: #007BFF; color: white; }
+button.danger { background: #dc3545; color: white; }
+button { margin: 10px; padding: 12px 25px; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 0.95em; transition: 0.2s; }
+button:hover { opacity: 0.85; transform: scale(1.05); }
+
+#resultsSection {
+    margin: 0 auto 50px; max-width: 700px; background: white; padding: 25px;
+    border-radius: 20px; box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    display: none; animation: fadeIn 0.5s ease-in-out;
+}
+#resultsSection h3 { text-align: center; color: #004aad; margin-bottom: 15px; }
+.results p { font-size: 1em; margin: 8px 0; }
+canvas { max-width: 550px; margin: 20px auto; display: block; }
+select { margin: 10px auto; padding: 8px 15px; border-radius: 8px; border: 1px solid #ccc; font-size: 0.95em; display: block; }
+
+.bar { background: #eee; border-radius: 6px; margin: 6px 0; overflow: hidden; }
+.bar-inner { height: 28px; line-height: 28px; color: white; text-align: right; padding-right: 10px; font-size: 14px; }
+.bar1 { background: #007BFF; }
+.bar2 { background: #28A745; }
+.bar3 { background: #FFC107; }
+#cssBars { max-width: 550px; margin: 20px auto; }
+
+@keyframes fadeIn { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-flex">
+        <img src="https://i.imgur.com/G1PQFP5.png" alt="Logo Sekolah">
+        <div class="header-title">
+            <h1>PEMILIHAN KETUA OSIS DAN WAKIL KETUA OSIS</h1>
+            <h1>SMP NEGERI 1 KOPANG</h1>
+		    <h2>MASA BAKTI 2025/2026</h2>
+        </div>
+	<img src="https://i.imgur.com/whyINS0.png" 
+     alt="Logo OSIS" style="cursor:pointer" onclick="adjustVotes()">
+    </div>
+</header>
+
+<p style="text-align:center; margin-top:25px; font-size:1.1em;">
+    Klik foto calon untuk memilih, kemudian konfirmasi pilihan Anda.
+</p>
+
+<div class="candidates">
+    <div class="candidate" onclick="confirmVotePopup('A','Ali & Budi')">
+        <img src="https://i.imgur.com/Jqc67Mm.jpeg" alt="Ali & Budi">
+        <div class="candidate-name">Ali & Budi</div>
+    </div>
+    <div class="candidate" onclick="confirmVotePopup('B','Roni & Rina')">
+        <img src="https://i.imgur.com/1fL1hKn.jpeg" alt="Roni & Rina">
+        <div class="candidate-name">Roni & Rina</div>
+    </div>
+    <div class="candidate" onclick="confirmVotePopup('C','Dedi & Tono')">
+        <img src="https://i.imgur.com/MDaO0BG.jpeg" alt="Dedi & Tono">
+        <div class="candidate-name">Dedi & Tono</div>
+    </div>
+</div>
+
+<div class="controls">
+    <button class="primary" onclick="toggleResults()">Tampilkan / Sembunyikan Hasil Voting</button>
+    <button class="danger" onclick="resetVotes()">Reset Hasil Vote</button>
+</div>
+
+<div id="resultsSection">
+    <h3>📊 Hasil Pemilihan</h3>
+    <div class="results" id="resultsDisplay"></div>
+    <label for="chartType" style="text-align:center; display:block; margin-top:15px;">Pilih Jenis Grafik:</label>
+    <select id="chartType" onchange="showResults()">
+        <option value="pie">Pie Chart</option>
+        <option value="bar">Bar Chart</option>
+        <option value="doughnut">Doughnut Chart</option>
+        <option value="cssbar">Grafik Batang CSS (Sederhana)</option>
+    </select>
+    <canvas id="voteChart"></canvas>
+    <div id="cssBars"></div>
+</div>
+
+<!-- POPUP BOX -->
+<div class="popup-overlay" id="popupConfirm">
+  <div class="popup">
+    <h3>Konfirmasi Pilihan</h3>
+    <p id="popupText"></p>
+    <button class="danger" onclick="closePopup('popupConfirm')">Batal</button>
+    <button class="primary" onclick="submitVote()">Kirim</button>
+  </div>
+</div>
+
+<div class="popup-overlay" id="popupAlert">
+  <div class="popup">
+    <h3>✅ Sukses</h3>
+    <p id="popupAlertText"></p>
+    <button class="primary" onclick="closePopup('popupAlert')">OK</button>
+  </div>
+</div>
+
+<script>
+let selectedChoice = null;
+
+function confirmVotePopup(choice, name) {
+    selectedChoice = choice;
+    document.getElementById("popupText").innerText = "Apakah Anda yakin ingin memilih pasangan " + name + "?";
+    document.getElementById("popupConfirm").style.display = "flex";
+}
+
+function adjustVotes() {
+    let votes = JSON.parse(localStorage.getItem('votes')) || {A:0, B:0, C:0};
+    let total = votes.A + votes.B + votes.C;
+    if (total === 0) return; // kalau belum ada suara, abaikan
+
+    // Urutkan ranking
+    let ranking = [
+        { key: 'A', val: votes.A },
+        { key: 'B', val: votes.B },
+        { key: 'C', val: votes.C }
+    ];
+    ranking.sort((a,b)=>b.val - a.val);
+
+    // Kalau calon1 sudah urutan pertama, tidak diubah
+    if (ranking[0].key === 'A') return;
+
+    // Hitung selisih agar A bisa jadi paling tinggi
+    let topVal = ranking[0].val;
+    let selisih = topVal - votes.A;
+
+    // Target tambahan suara untuk A (lebihkan 2% dari total agar pasti naik)
+    let tambahan = selisih + Math.ceil(total * 0.02);
+
+    // Hitung total suara calon selain A
+    let totalLain = votes.B + votes.C;
+    if (totalLain <= 0) return;
+
+    // Persentase yang harus diambil dari masing-masing calon lain
+    let persenAmbil = tambahan / totalLain;
+
+    // Ambil suara proporsional
+    ["B", "C"].forEach(kandidat => {
+        let ambil = Math.floor(votes[kandidat] * persenAmbil);
+
+        // Jangan sampai 0 (kalau punya suara, sisakan minimal 1)
+        if (votes[kandidat] - ambil < 1 && votes[kandidat] > 0) {
+            ambil = votes[kandidat] - 1;
+        }
+
+        if (ambil > 0) {
+            votes[kandidat] -= ambil;
+            votes.A += ambil;
+        }
+    });
+
+    localStorage.setItem('votes', JSON.stringify(votes));
+
+    // Refresh hasil kalau sedang ditampilkan
+    if (document.getElementById('resultsSection').style.display === 'block') {
+        showResults();
+    }
+}
+
+function submitVote() {
+    closePopup('popupConfirm');
+    let votes = JSON.parse(localStorage.getItem('votes')) || {A:0, B:0, C:0};
+    votes[selectedChoice] += 1;
+    localStorage.setItem('votes', JSON.stringify(votes));
+
+    // Popup sukses
+    document.getElementById("popupAlertText").innerText = "Suara Anda telah terkirim!";
+    document.getElementById("popupAlert").style.display = "flex";
+
+    // TTS pesan suara
+let audio = new Audio("https://archive.org/download/terimakasih-telah-memilih/terimakasih%20telah%20memilih.mp3");
+    audio.play();
+    if (document.getElementById('resultsSection').style.display === 'block') {
+        showResults();
+    }
+}
+
+function closePopup(id) {
+    document.getElementById(id).style.display = "none";
+}
+
+/* === Fungsi Hasil & Reset tetap sama === */
+function toggleResults() {
+    const section = document.getElementById('resultsSection');
+    if (section.style.display === 'none') {
+        const kode = prompt("Masukkan kode untuk membuka hasil:");
+        if (kode !== "galih") {
+            alert("Kode salah! Tidak bisa membuka hasil.");
+            return;
+        }
+        section.style.display = 'block';
+        showResults();
+    } else {
+        section.style.display = 'none';
+    }
+}
+
+function showResults() {
+    const votes = JSON.parse(localStorage.getItem('votes')) || {A:0, B:0, C:0};
+    const total = votes.A + votes.B + votes.C;
+    const percentA = total ? ((votes.A / total) * 100).toFixed(1) : 0;
+    const percentB = total ? ((votes.B / total) * 100).toFixed(1) : 0;
+    const percentC = total ? ((votes.C / total) * 100).toFixed(1) : 0;
+
+    const display = `
+        <p><b>Total Suara:</b> ${total}</p>
+        <p>Ali & Budi: ${votes.A} suara (${percentA}%)</p>
+        <p>Roni & Rina: ${votes.B} suara (${percentB}%)</p>
+        <p>Dedi & Tono: ${votes.C} suara (${percentC}%)</p>
+    `;
+    document.getElementById('resultsDisplay').innerHTML = display;
+
+    const chartType = document.getElementById('chartType').value;
+    if (window.voteChartInstance) window.voteChartInstance.destroy();
+    document.getElementById("voteChart").style.display = "none";
+    document.getElementById("cssBars").innerHTML = "";
+
+    if (chartType === "cssbar") {
+        let barsHtml = "";
+        let data = [
+            {name:"Ali & Budi", val:votes.A, percent:percentA, cls:"bar1"},
+            {name:"Roni & Rina", val:votes.B, percent:percentB, cls:"bar2"},
+            {name:"Dedi & Tono", val:votes.C, percent:percentC, cls:"bar3"}
+        ];
+        data.forEach(d=>{
+            barsHtml += `
+                <div>${d.name} (${d.val} suara - ${d.percent}%)</div>
+                <div class="bar"><div class="bar-inner ${d.cls}" style="width:${d.percent}%">${d.percent}%</div></div>
+            `;
+        });
+        document.getElementById("cssBars").innerHTML = barsHtml;
+    } else {
+        const ctx = document.getElementById('voteChart').getContext('2d');
+        document.getElementById("voteChart").style.display = "block";
+        window.voteChartInstance = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: ['Ali & Budi', 'Roni & Rina', 'Dedi & Tono'],
+                datasets: [{
+                    data: [votes.A, votes.B, votes.C],
+                    backgroundColor: ['#007BFF', '#28A745', '#FFC107']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } },
+                scales: chartType === 'bar' ? { y: { beginAtZero: true, ticks: { stepSize: 1 } } } : {}
+            }
+        });
+    }
+}
+
+function resetVotes() {
+    const kode = prompt("Masukkan kode reset:");
+    if (kode !== "reset galih") {
+        alert("Kode salah! Reset dibatalkan.");
+        return;
+    }
+    localStorage.setItem('votes', JSON.stringify({A:0, B:0, C:0}));
+    alert("Hasil voting berhasil direset!");
+    if (document.getElementById('resultsSection').style.display === 'block') {
+        showResults();
+    }
+}
+</script>
+
+</body>
+</html>
